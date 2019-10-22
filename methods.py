@@ -71,7 +71,6 @@ class hvir_calculator:
             R = (-0.1848 * hati) + 1.0  # Updated new equation 31/1/19.
             return normal_clamp(R)
 
-
     def calc_r_vcg(self, vcg: int, road_cat: str):
         if vcg is None or road_cat.lower() == 'r1' or road_cat.lower() == 'r2':
             return self.defaults['default_r_val']
@@ -112,11 +111,11 @@ class hvir_calculator:
                 return self.defaults['default_r_val']
 
     def calc_w_geom_unmarked(self, seal_width: float):
-        # 1)	Assume half of the seal width (TSW) is for travel in each direction.
-        # 2)	Take HSW and allocate up to 2.9 m as the lane width.
-        # 3)	If there is any HSW remaining, divide it equally between additional lane width and sealed shoulder width, limiting lane width to a maximum of 5.8 m.
-        # 4)	Add any additional HSW to the sealed shoulder width.
-        # 5)	Once values for Lane Width and Sealed Shoulder Width have been finalised, calculate Safety with the By Geometry method.
+        # 1)	Assume half of the seal width (TSW) is for travel in each direction. 2)	Take HSW and allocate up to
+        # 2.9 m as the lane width. 3)	If there is any HSW remaining, divide it equally between additional lane width
+        # and sealed shoulder width, limiting lane width to a maximum of 5.8 m. 4)	Add any additional HSW to the
+        # sealed shoulder width. 5)	Once values for Lane Width and Sealed Shoulder Width have been finalised,
+        # calculate Safety with the By Geometry method.
         half_seal_width = seal_width / 2.0
         if half_seal_width <= 2.9:
             lane_width = half_seal_width
@@ -183,17 +182,17 @@ class hvir_calculator:
             return "NA"
         if minev >= maxev:
             raise ValueError("Max ev: %s is less than min ev: %s" % (maxev, minev))
-            if hvir > maxev:
-                return "High"
-            elif hvir >= minev:
-                return "Medium"
+        if hvir > maxev:
+            return "High"
+        elif hvir >= minev:
+            return "Medium"
         else:
             return "Low"
 
     def a_method_heirachy(self, survey, skip_limits=False):
         if survey['mass_limit'] is None or survey['length_limit'] is None or skip_limits:
             if survey['avc'] is not None:
-                #logging.warning("Missing mass or length limit in a-advanced, using basic version.")
+                # logging.warning("Missing mass or length limit in a-advanced, using basic version.")
                 a = self.calc_a_avc(survey['avc'])
             else:
                 logging.warning("Missing mass or length limit in a-advanced, using basic version.")
@@ -216,7 +215,7 @@ class hvir_calculator:
 
     def r_method_fallback(self, survey):
         if survey['vcg'] is None or survey['road_cat'].lower() == 'r1' or survey['road_cat'].lower() == 'r2':
-            r =  'NA'
+            r = 'NA'
         else:
             r = self.calc_r_vcg(survey)  # UA Needs check for vcg data present?
         return 'NA'
@@ -251,7 +250,8 @@ class hvir_calculator:
                 else:
                     if survey['seal_width'] is None:
                         logging.debug(
-                            "Couldn't calculate w, line marking was set to Yes, but lane_width or seal_shld or seal_width not provided")
+                            "Couldn't calculate w, line marking was set to Yes, but lane_width or seal_shld or "
+                            "seal_width not provided")
                         w = 'NA'
                     else:
                         w = self.calc_w_geom_unmarked(survey['seal_width'])  # sealed but not marked
@@ -269,7 +269,6 @@ class hvir_calculator:
             w = 'NA'
         return w
 
-
     def method_logic(self, survey, hvir_params):
         self.defaults = hvir_params['data_params']['default_values']
         a = self.a_method_logic(survey, hvir_params)
@@ -281,14 +280,14 @@ class hvir_calculator:
             hvir = 0.67 * a + 0.33 * w
         elif r != 'NA' and w != 'NA':
             hvir = self.calc_hvir(a, r, w)
-        elif w=='NA':
+        elif w == 'NA':
             hvir = 'NA'
         maxev = self.calc_maxev(survey)
         minev = self.calc_minev(survey)
-        if survey['road_cat'] == None:
+        if survey['road_cat'] is None:
             survey['road_cat'] = "NA".lower()
-        if survey[
-            'road_cat'] == "r0":  # In all cases.if road_Cat is R0 then always return Medium even if undefined values.
+        if survey['road_cat'] == "r0":  # In all cases.if road_Cat is R0 then always return Medium even if undefined
+            # values.
             cat = "Medium"
         else:
             cat = self.calc_cat(hvir, minev, maxev)
