@@ -29,7 +29,7 @@ class hvir_calculator:
             L = length_limit / 53.5
             L = normal_clamp(L)
 
-            # Caluclate A
+            # Calculate A
             A = (2.0 * M) / (1.0 + (M / L))
             return A
 

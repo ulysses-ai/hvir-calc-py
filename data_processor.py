@@ -35,16 +35,16 @@ def cast_row(row, header, converters, key_fails):
               'sealed_should_width': None,
               'form_width': None,
               'seal_width': None}
-    cast_row = []
+    tmp_row = []
     for index, cell in enumerate(row):
         try:
-            cast_row.append(converters[header[index]](cell))
-            survey[header[index]] = cast_row[-1]
+            tmp_row.append(converters[header[index]](cell))
+            survey[header[index]] = tmp_row[-1]
             # print('\t',header[index]+' '*(15-len(header[index])),'\t',index,'\t',cell+' '*(25-len(cell)),'\t',
             # converters[header[index]](cell))
         except:
             # print('Failed to pass row %s, field %s, with value %s' % (row_num,header[index],cell))
-            cast_row.append(None)
+            tmp_row.append(None)
             survey[header[index]] = None
             if header[index] not in key_fails.keys():
                 key_fails[header[index]] = 1
