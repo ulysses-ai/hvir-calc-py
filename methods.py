@@ -7,7 +7,7 @@ def normal_clamp(value, min_v=0, max_v=1):
     return value
 
 
-class hvir_calculator:
+class hvirCalculator:
     def __init__(self):
         self.defaults = {}
 
@@ -21,17 +21,17 @@ class hvir_calculator:
             # Calculate M
             # M = 0.5 * math.sin((math.PI * mass_limit / 130.0) - (math.PI / 2.0)) + 0.5 # as per HVIR index calculation equation (3a)
             # Use new equation
-            M = mass_limit / 119.0
-            M = normal_clamp(M)
+            m = mass_limit / 119.0
+            m = normal_clamp(m)
 
             # Calculate L
             # L = 0.5 * math.Sin((math.PI * length_limit / 53.5) - (math.PI / 2.0)) + 0.5  # as per HVIR index calculation equation (3b)
-            L = length_limit / 53.5
-            L = normal_clamp(L)
+            l = length_limit / 53.5
+            l = normal_clamp(l)
 
             # Calculate A
-            A = (2.0 * M) / (1.0 + (M / L))
-            return A
+            a = (2.0 * m) / (1.0 + (m / l))
+            return a
 
     def calc_a_avc(self, avc: int):
         # New method uses the Austroads Vehicle class instead of the road categories
@@ -53,23 +53,20 @@ class hvir_calculator:
             logging.warning('No avc provided, returning default avc')
             return self.defaults['default_avc']
 
-    def calc_r_iri(self, iri: float, survey):
+    def calc_r_iri(self, iri: float):
         # calculate the r value using the basic method based on IRI.
-        if iri is None:
-            return self.calc_r_comfort(survey)  # fallback
-        else:
-            # R =  (-0.125 * iri) + 1.25  # as per HVIR index calculation equation (4)
-            R = (-0.1 * iri) + 1.0  # updated new equation 31/1/19.
-            return normal_clamp(R)
+        # R =  (-0.125 * iri) + 1.25  # as per HVIR index calculation equation (4)
+        r = (-0.1 * iri) + 1.0  # updated new equation 31/1/19.
+        return normal_clamp(r)
 
-    def calc_r_hati(self, hati: float, survey):
+    def calc_r_hati(self, hati: float):
         # Calculate the r value using the basic method based on HATI.
         if hati is None:
             logging.debug("Invalid HATI in r-hati, using default ")
             return 'NA'
         else:
-            R = (-0.1848 * hati) + 1.0  # Updated new equation 31/1/19.
-            return normal_clamp(R)
+            r = (-0.1848 * hati) + 1.0  # Updated new equation 31/1/19.
+            return normal_clamp(r)
 
     def calc_r_vcg(self, vcg: int, road_cat: str):
         if vcg is None or road_cat.lower() == 'r1' or road_cat.lower() == 'r2':
@@ -145,19 +142,19 @@ class hvir_calculator:
         w_lw = normal_clamp(lane_width / 5.8)
         w_ssw = normal_clamp(sealed_should_width / 3.0)  # as per HVIR index calculation equation (6b)
         w_total = (w_lw + w_ssw) / 2.0  # as per HVIR index calculation equation (6c)
-        return w_total;
+        return w_total
 
     def calc_hvir(self, a: float, r: float, s: float):
         if a < 0 or r < 0 or s < 0:
             logging.warning("Invalid input in calc_hvir ")
             return 'NA'
         else:
-            hvir = (0.4 * a + 0.4 * r + 0.2 * s);  # as per equation(8), but stored as 0 < hvir < 1 not %
+            hvir = (0.4 * a + 0.4 * r + 0.2 * s)  # as per equation(8), but stored as 0 < hvir < 1 not %
             return hvir
 
     def calc_maxev(self, survey):
         if survey['road_cat'] is None:
-            logging.Debug("Missing road_cat in calc_minev, using default ");
+            logging.debug("Missing road_cat in calc_minev, using default ")
             return self.defaults['maxev']['default']
         else:
             cat = survey['road_cat'].lower()
@@ -168,7 +165,7 @@ class hvir_calculator:
 
     def calc_minev(self, survey):
         if survey['road_cat'] is None:
-            logging.Debug("Missing road_cat in calc_minev, using default ");
+            logging.debug("Missing road_cat in calc_minev, using default ")
             return self.defaults['minev']['default']
         else:
             cat = survey['road_cat'].lower()
@@ -211,14 +208,17 @@ class hvir_calculator:
             a = self.a_method_heirachy(survey)
         elif hvir_params['a_method'] == "avc":
             a = self.a_method_heirachy(survey, skip_limits=True)
+        else:
+            logging.debug('Invalid a method specified: %s' % hvir_params['a_method'])
+            a = 'NA'  # invalid a_method provided
         return a
 
     def r_method_fallback(self, survey):
         if survey['vcg'] is None or survey['road_cat'].lower() == 'r1' or survey['road_cat'].lower() == 'r2':
             r = 'NA'
         else:
-            r = self.calc_r_vcg(survey)  # UA Needs check for vcg data present?
-        return 'NA'
+            r = self.calc_r_vcg(survey['vcg'], survey['road_cat'])  # UA Needs check for vcg data present?
+        return r
 
     def r_method_logic(self, survey, hvir_params):
         # 1. Check selected calculation method (iri, hati, vcg),
@@ -231,16 +231,19 @@ class hvir_calculator:
                 if survey['iri'] is None:
                     r = self.r_method_fallback(survey)
                 else:
-                    r = self.calc_r_iri(survey['iri'], survey)
+                    r = self.calc_r_iri(survey['iri'])
 
             elif hvir_params['r_method'] == 'hati':  # hati
                 if survey['hati'] is None:
                     r = self.r_method_fallback(survey)
                 else:
-                    r = self.calc_r_hati(survey['hati'], survey)
+                    r = self.calc_r_hati(survey['hati'])
+            else:
+                logging.debug('Invalid r method specified: %s', survey['r_method'])
+                r = 'NA'
         return r
 
-    def w_method_logic(self, survey, hvir_params):
+    def w_method_logic(self, survey):
         # New logic to allow for unsealed and unmarked roads cases
         if survey['seal_flag'].lower() == 'sealed' or survey['seal_flag'] is None:
             if survey['line_mark'].lower() == 'yes' or survey['line_mark'].lower() is None:
@@ -273,7 +276,7 @@ class hvir_calculator:
         self.defaults = hvir_params['data_params']['default_values']
         a = self.a_method_logic(survey, hvir_params)
         r = self.r_method_logic(survey, hvir_params)
-        w = self.w_method_logic(survey, hvir_params)
+        w = self.w_method_logic(survey)
         # logger.(a,r,w,survey['road_cat'])
         # UA As discussed, this is 'NA' or specifically a lack of Leeway Input Data.
         if 'r' == 'NA':
@@ -281,6 +284,8 @@ class hvir_calculator:
         elif r != 'NA' and w != 'NA':
             hvir = self.calc_hvir(a, r, w)
         elif w == 'NA':
+            hvir = 'NA'
+        else:
             hvir = 'NA'
         maxev = self.calc_maxev(survey)
         minev = self.calc_minev(survey)

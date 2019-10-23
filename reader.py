@@ -1,5 +1,5 @@
 import sys
-import datetime
+from datetime import datetime
 import os
 import csv
 import json
@@ -47,9 +47,10 @@ def load_stdin(std):
     return csv_reader
 
 
-def read_file(csv_reader, kwargs=None):
+def read_file(csv_reader):
     raw_data = []
     line_count = 0
+    header = []
     for row in csv_reader:
         if line_count == 0:
             if any(cell.isdigit() for cell in row):  # Top row is not header

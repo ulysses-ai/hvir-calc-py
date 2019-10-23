@@ -6,7 +6,8 @@ def process_rows(raw_data, header, hvir_params, converters):
     surveys = []
     failed_rows = []
     key_fails = {}
-    calculator = methods.hvir_calculator()
+    calculator = methods.hvirCalculator()
+    out_keys = None
     for row_num, row in enumerate(raw_data):
 
         try:
